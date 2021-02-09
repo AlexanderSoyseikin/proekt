@@ -45,6 +45,7 @@ a_has_dot_1 = False
 class Tnak(pg.sprite.Sprite):
     def __init__(self, x, filename, position, idd):
         self.sch = -1
+        self.desint = False
         self.id = idd
         self.position = position
         pg.sprite.Sprite.__init__(self)
@@ -58,23 +59,24 @@ class Tnak(pg.sprite.Sprite):
         self.enemy = None
 
     def update(self):
-        if self.position == "destroyed_e":
-            self.chek("e")
-            self.next_e()
-            self.chek("e")
-        elif self.position == "destroyed_a":
-            self.chek("a")
-            self.next_a()
-            self.chek("a")
+        if not self.desint:
+            if self.position == "destroyed_e":
+                self.chek("e")
+                self.next_e()
+                self.chek("e")
+            elif self.position == "destroyed_a":
+                self.chek("a")
+                self.next_a()
+                self.chek("a")
 
-        if self.im_name == "e_pt.png" or self.im_name == "pt.png" or self.im_name == "pt_a.png":
-            if self.im_name == "pt_a.png":
-                self.image = pg.image.load(
-                    "pt.png").convert_alpha()
-            if self.position == "tank_a":
-                self.rect.x += speed
-            elif self.position == "tank_e":
-                self.rect.x -= 2
+            if self.im_name == "e_pt.png" or self.im_name == "pt.png" or self.im_name == "pt_a.png":
+                if self.im_name == "pt_a.png":
+                    self.image = pg.image.load(
+                        "pt.png").convert_alpha()
+                if self.position == "tank_a":
+                    self.rect.x += speed
+                elif self.position == "tank_e":
+                    self.rect.x -= 2
 
     def chek(self, side):
         if "pt" in self.im_name:
@@ -153,6 +155,79 @@ class Tnak(pg.sprite.Sprite):
         self.rect.y = 312
 
 
+class Eng(pg.sprite.Sprite):
+    def __init__(self, x, filename, position, idd):
+        self.id = idd
+        self.position = position
+        pg.sprite.Sprite.__init__(self)
+        self.im_name = filename
+        self.image = pg.image.load(
+            filename).convert_alpha()
+        self.rect = self.image.get_rect(
+            center=x)
+
+        self.hp = 1
+        self.enemy = None
+
+        self.dot_fire_timer = 0
+
+    def update(self):
+        global bl_timer
+        global bl_timer_eng
+        if self.position == "a_eng" and self.rect.x < 300 and self.hp > 0:
+            self.rect.x += 1
+        if self.position == "a_eng" and self.rect.x >= 300 and self.hp > 0:
+            bl_timer += 1
+            if bl_timer >= 300:
+                bl_timer = 0
+                self.position = "a_dot"
+                self.image = pg.image.load(
+                    "a_dot.png").convert_alpha()
+                self.im_name = "a_dot.png"
+                self.hp = 100
+                a_has_dot_1 = True
+                self.rect.y = 280
+                self.rect = self.image.get_rect(
+                    center=(self.rect[0], 306))
+                for i in range(_):
+                    if sprites[i].position == "a_dot":
+                        for j in range(_):
+                            if sprites[j].position == "tank_e" or (
+                                    sprites[j].position == "destroyed_e" and sprites[j].hp > 0):
+                                if sprites[i].rect.colliderect(sprites[j].rect):
+                                    sprites[j].position = "destroyed_e"
+                                    sprites[j].hp = -100
+                                    sprites[j].enemy = i
+        if self.position == "a_eng_destr":
+            if bl_timer_eng < 4:
+                bl_timer_eng += 1
+            self.image = pg.image.load(
+                images_a_e[bl_timer_eng]).convert_alpha()
+            self.im_name = images_a_e[bl_timer_eng]
+        if self.enemy and self.position == "a_dot":
+            if sprites[self.enemy].hp > 0:
+                self.next_a()
+            else:
+                self.image = pg.image.load(
+                    "a_dot.png").convert_alpha()
+                self.im_name = "a_dot.png"
+
+    def next_a(self):
+        if self.position == "a_dot" and sprites[self.enemy].position != "a_dot":
+            if self.hp > 0:
+                self.dot_fire_timer += 1
+                if self.dot_fire_timer % 2 == 1 and sprites[self.enemy].hp > 0:
+                    self.image = pg.image.load(
+                        "a_dot_a.png").convert_alpha()
+                    self.im_name = "a_dot_a.png"
+                    if sprites[self.enemy].hp > 0:
+                        sprites[self.enemy].hp -= 1
+                if self.dot_fire_timer % 2 == 0:
+                    self.image = pg.image.load(
+                        "a_dot.png").convert_alpha()
+                    self.im_name = "a_dot.png"
+
+
 class Objekt(pg.sprite.Sprite):
     def __init__(self, x, filename, position, idd, mine_number=None):
         self.mine_number = mine_number
@@ -165,16 +240,15 @@ class Objekt(pg.sprite.Sprite):
         self.rect = self.image.get_rect(
             center=x)
         self.enemy = None
-        self.dot_fire_timer = 0
         self.rotate_timer = 0
         self.attack_timer = -1
         self.enemy_bool = False
-        self.desint = False
         self.mine_timer = 0
         self.mine_exp_timer = None
         self.r_t = 0
         self.hel_des = False
         self.des_timer = -1
+        self.desint = False
         self.hp = 1
 
         self.start_timer = False
@@ -184,8 +258,6 @@ class Objekt(pg.sprite.Sprite):
         if not self.desint:
             global t
             global speed
-            global bl_timer_eng
-            global bl_timer
             global sprites
             global count_a
             global energy_a
@@ -259,60 +331,8 @@ class Objekt(pg.sprite.Sprite):
                         _ = len(sprites)
                 elif not self.mine_exp_timer and self.mine_timer >= 10:
                     self.mine_exp_timer = -1
-            if self.position == "a_eng" and self.rect.x < 300 and self.hp > 0:
-                self.rect.x += 1
-            if self.position == "a_eng" and self.rect.x >= 300 and self.hp > 0:
-                bl_timer += 1
-                if bl_timer >= 300:
-                    bl_timer = 0
-                    self.position = "a_dot"
-                    self.image = pg.image.load(
-                        "a_dot.png").convert_alpha()
-                    self.im_name = "a_dot.png"
-                    self.hp = 100
-                    a_has_dot_1 = True
-                    self.rect.y = 280
-                    self.rect = self.image.get_rect(
-                        center=(self.rect[0], 306))
-                    for i in range(_):
-                        if sprites[i].position == "a_dot":
-                            for j in range(_):
-                                if sprites[j].position == "tank_e" or (
-                                        sprites[j].position == "destroyed_e" and sprites[j].hp > 0):
-                                    if sprites[i].rect.colliderect(sprites[j].rect):
-                                        sprites[j].position = "destroyed_e"
-                                        sprites[j].hp = -100
-                                        sprites[j].enemy = i
-            if self.position == "a_eng_destr":
-                if bl_timer_eng < 4:
-                    bl_timer_eng += 1
-                self.image = pg.image.load(
-                    images_a_e[bl_timer_eng]).convert_alpha()
-                self.im_name = images_a_e[bl_timer_eng]
-            if self.enemy and self.position == "a_dot":
-                if sprites[self.enemy].hp > 0:
-                    self.next_a()
-                else:
-                    self.image = pg.image.load(
-                        "a_dot.png").convert_alpha()
-                    self.im_name = "a_dot.png"
         else:
             pass
-
-    def next_a(self):
-        if self.position == "a_dot" and sprites[self.enemy].position != "a_dot":
-            if self.hp > 0:
-                self.dot_fire_timer += 1
-                if self.dot_fire_timer % 2 == 1 and sprites[self.enemy].hp > 0:
-                    self.image = pg.image.load(
-                        "a_dot_a.png").convert_alpha()
-                    self.im_name = "a_dot_a.png"
-                    if sprites[self.enemy].hp > 0:
-                        sprites[self.enemy].hp -= 1
-                if self.dot_fire_timer % 2 == 0:
-                    self.image = pg.image.load(
-                        "a_dot.png").convert_alpha()
-                    self.im_name = "a_dot.png"
 
     def destroy(self):
         self.hel_des = True
@@ -440,7 +460,7 @@ while run:
                             if not a_has_dot_1:
                                 timer3 = 0
                                 count_a += 1
-                                t2 = Objekt((0, 327), "a_eng.png", "a_eng", count_a)
+                                t2 = Eng((0, 327), "a_eng.png", "a_eng", count_a)
                                 sprites.append(t2)
                                 energy_a -= 2
                                 t2 = None
