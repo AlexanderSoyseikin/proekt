@@ -296,9 +296,39 @@ class Hlk(pg.sprite.Sprite):
         self.hel_des = True
 
 
-class Objekt(pg.sprite.Sprite):
+class Mines(pg.sprite.Sprite):
     def __init__(self, x, filename, position, idd, mine_number=None):
+        self.desint = False
+        self.id = idd
+        self.position = position
+        pg.sprite.Sprite.__init__(self)
+        self.im_name = filename
+        self.image = pg.image.load(
+            filename).convert_alpha()
+        self.rect = self.image.get_rect(
+            center=x)
         self.mine_number = mine_number
+        self.enemy = None
+        self.mine_timer = 0
+        self.mine_exp_timer = None
+        self.t = True
+
+    def update(self):
+        if self.position == "a_mines" and self.enemy:
+            self.mine_timer += 1
+            if self.mine_exp_timer is not None:
+                if self.mine_exp_timer <= 4:
+                    self.mine_exp_timer += 1
+                    self.image = pg.image.load(
+                        mines_exp[self.mine_exp_timer]).convert_alpha()
+                    if self.mine_exp_timer == 1:
+                        sprites[self.enemy].change_image("e_pt_desintigrated.png")
+            elif not self.mine_exp_timer and self.mine_timer >= 10:
+                self.mine_exp_timer = -1
+
+
+class Raketa(pg.sprite.Sprite):
+    def __init__(self, x, filename, position, idd):
         self.id = idd
         self.position = position
         pg.sprite.Sprite.__init__(self)
@@ -308,51 +338,32 @@ class Objekt(pg.sprite.Sprite):
         self.rect = self.image.get_rect(
             center=x)
         self.enemy = None
-        self.mine_timer = 0
-        self.mine_exp_timer = None
+        self.rotate_timer = 0
         self.r_t = 0
-        self.desint = False
-        self.hp = 1
 
     def update(self):
-        if not self.desint:
-            global t
-            global speed
-            global sprites
-            global count_a
-            global energy_a
-            global a_has_dot_1
-            global images_a_e
-            global _
-            global h_rotate
-            if self.position == "raketa_e":
-                self.rect.x -= 10
-                self.image = pg.image.load(
-                    raketa_enm_imgs[self.rotate_timer % 2]).convert_alpha()
-            self.r_t += 1
-            if self.position == "a_raketa":
-                self.image = pg.image.load(
-                    raketa_imgs[self.r_t % 2]).convert_alpha()
-                self.rect.x += 10
-            if self.position == "a_mines" and self.enemy:
-                self.mine_timer += 1
-                if self.mine_exp_timer is not None:
-                    if self.mine_exp_timer <= 4:
-                        self.mine_exp_timer += 1
-                        self.image = pg.image.load(
-                            mines_exp[self.mine_exp_timer]).convert_alpha()
-                        if self.mine_exp_timer == 1:
-                            sprites[self.enemy].change_image("e_pt_desintigrated.png")
-                    else:
-                        del sprites[self.mine_number]
-                        _ = len(sprites)
-                elif not self.mine_exp_timer and self.mine_timer >= 10:
-                    self.mine_exp_timer = -1
-        else:
-            pass
+        self.rotate_timer += 1
+        if self.position == "raketa_e":
+            self.rect.x -= 10
+            self.image = pg.image.load(
+                raketa_enm_imgs[self.rotate_timer % 2]).convert_alpha()
+        self.r_t += 1
+        if self.position == "a_raketa":
+            self.image = pg.image.load(
+                raketa_imgs[self.r_t % 2]).convert_alpha()
+            self.rect.x += 10
 
-    def destroy(self):
-        self.hel_des = True
+
+class Objekt(pg.sprite.Sprite):
+    def __init__(self, x, filename, position, idd, mine_number=None):
+        self.id = idd
+        self.position = position
+        pg.sprite.Sprite.__init__(self)
+        self.im_name = filename
+        self.image = pg.image.load(
+            filename).convert_alpha()
+        self.rect = self.image.get_rect(
+            center=x)
 
 
 pg.init()
@@ -424,7 +435,7 @@ while run:
                     if energy_e > 1:
                         if timer6 % 300 == 0:
                             count_e += 1
-                            te = Objekt((1550, 234), "raketa_enemy.png", "raketa_e", count_e)
+                            te = Raketa((1550, 234), "raketa_enemy.png", "raketa_e", count_e)
                             sprites.append(te)
                             te = None
                             energy_e -= 2
@@ -445,7 +456,7 @@ while run:
                                     sp_mines[i] = i + 1
                                     mnsh = i + 1
                         count_a += 1
-                        t = Objekt((50 * mnsh, 326), "mines.png", "a_mines", count_a, mnsh)
+                        t = Mines((50 * mnsh, 326), "mines.png", "a_mines", count_a, mnsh)
                         sprites.append(t)
                         energy_a -= 3
                         t = None
@@ -486,7 +497,7 @@ while run:
                         if energy_a > 1:
                             timer5 = 0
                             count_a += 1
-                            t2 = Objekt((0, 234), "raketa.png", "a_raketa", count_a)
+                            t2 = Raketa((0, 234), "raketa.png", "a_raketa", count_a)
                             sprites.append(t2)
                             energy_a -= 2
                             t2 = None
