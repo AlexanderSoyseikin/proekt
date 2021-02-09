@@ -228,6 +228,74 @@ class Eng(pg.sprite.Sprite):
                     self.im_name = "a_dot.png"
 
 
+class Hlk(pg.sprite.Sprite):
+    def __init__(self, x, filename, position, idd):
+        self.id = idd
+        self.position = position
+        pg.sprite.Sprite.__init__(self)
+        self.im_name = filename
+        self.image = pg.image.load(
+            filename).convert_alpha()
+        self.rect = self.image.get_rect(
+            center=x)
+        self.enemy = None
+        self.rotate_timer = 0
+        self.attack_timer = -1
+        self.hel_des = False
+        self.des_timer = -1
+        self.enemy_bool = False
+
+        self.start_timer = False
+        self.started_timer = 0
+
+    def update(self):
+        self.rotate_timer += 1
+        if self.start_timer:
+            self.started_timer += 1
+        if self.hel_des:
+            self.des_timer += 1
+            if self.des_timer <= 5 + 10 and self.des_timer > -1 + 10:
+                if self.enemy:
+                    global a_has_hel
+                    global t
+                    del sprites[self.enemy]
+                    _ = len(sprites)
+                    self.enemy = None
+                    a_has_hel = False
+                self.image = pg.image.load(
+                    hel_destroy[self.des_timer - 10]).convert_alpha()
+            elif self.des_timer > 5 + 10:
+                self.image = pg.image.load(
+                    hel_destroy[-1]).convert_alpha()
+            else:
+                self.image = pg.image.load(
+                    h_rotate[self.rotate_timer % 4]).convert_alpha()
+                self.rect.x += int(hlk_speed)
+
+        if self.position == "hlk_a" and not self.hel_des:
+            if not self.enemy:
+                self.image = pg.image.load(
+                    h_rotate[self.rotate_timer % 4]).convert_alpha()
+                self.rect.x += int(hlk_speed)
+                if self.enemy_bool:
+                    self.rect.x += int(hlk_speed) * 3
+                    self.enemy_bool = False
+            if self.enemy and sprites[self.enemy].position != 'raketa_e':
+                self.attack_timer += 1
+                self.image = pg.image.load(
+                    h_rotate_attack[self.rotate_timer % 4][self.attack_timer % 6]).convert_alpha()
+                if self.attack_timer % 6 == 3:
+                    sprites[self.enemy].position = "destroyed_e"
+                    sprites[self.enemy].hp = -100
+                    sprites[self.enemy].change_image("e_pt_desintigrated.png")
+                if self.attack_timer % 6 == 5:
+                    self.enemy = None
+                    self.enemy_bool = True
+
+    def destroy(self):
+        self.hel_des = True
+
+
 class Objekt(pg.sprite.Sprite):
     def __init__(self, x, filename, position, idd, mine_number=None):
         self.mine_number = mine_number
@@ -240,19 +308,11 @@ class Objekt(pg.sprite.Sprite):
         self.rect = self.image.get_rect(
             center=x)
         self.enemy = None
-        self.rotate_timer = 0
-        self.attack_timer = -1
-        self.enemy_bool = False
         self.mine_timer = 0
         self.mine_exp_timer = None
         self.r_t = 0
-        self.hel_des = False
-        self.des_timer = -1
         self.desint = False
         self.hp = 1
-
-        self.start_timer = False
-        self.started_timer = 0
 
     def update(self):
         if not self.desint:
@@ -265,49 +325,6 @@ class Objekt(pg.sprite.Sprite):
             global images_a_e
             global _
             global h_rotate
-            self.rotate_timer += 1
-            if self.start_timer:
-                self.started_timer += 1
-            if self.hel_des:
-                self.des_timer += 1
-                if self.des_timer <= 5 + 10 and self.des_timer > -1 + 10:
-                    if self.enemy:
-                        global a_has_hel
-                        global t
-                        del sprites[self.enemy]
-                        _ = len(sprites)
-                        self.enemy = None
-                        a_has_hel = False
-                    self.image = pg.image.load(
-                        hel_destroy[self.des_timer - 10]).convert_alpha()
-                elif self.des_timer > 5 + 10:
-                    self.image = pg.image.load(
-                        hel_destroy[-1]).convert_alpha()
-                else:
-                    self.image = pg.image.load(
-                        h_rotate[self.rotate_timer % 4]).convert_alpha()
-                    self.rect.x += int(hlk_speed)
-
-            if self.position == "hlk_a" and not self.hel_des:
-                if not self.enemy:
-                    self.image = pg.image.load(
-                        h_rotate[self.rotate_timer % 4]).convert_alpha()
-                    self.rect.x += int(hlk_speed)
-                    if self.enemy_bool:
-                        self.rect.x += int(hlk_speed) * 3
-                        self.enemy_bool = False
-                if self.enemy and sprites[self.enemy].position != 'raketa_e':
-                    self.attack_timer += 1
-                    self.image = pg.image.load(
-                        h_rotate_attack[self.rotate_timer % 4][self.attack_timer % 6]).convert_alpha()
-                    if self.attack_timer % 6 == 3:
-                        sprites[self.enemy].position = "destroyed_e"
-                        sprites[self.enemy].hp = -100
-                        sprites[self.enemy].change_image("e_pt_desintigrated.png")
-                    if self.attack_timer % 6 == 5:
-                        self.enemy = None
-                        self.enemy_bool = True
-
             if self.position == "raketa_e":
                 self.rect.x -= 10
                 self.image = pg.image.load(
@@ -449,7 +466,7 @@ while run:
                         if energy_a > 2:
                             timer4 = 0
                             count_a += 1
-                            t = Objekt((90, 280), "a_hlk.png", "hlk_a", count_a)
+                            t = Hlk((90, 280), "a_hlk.png", "hlk_a", count_a)
                             sprites.append(t)
                             energy_a -= 3
                             t = None
